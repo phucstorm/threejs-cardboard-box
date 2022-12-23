@@ -1,5 +1,4 @@
 import * as THREE from "three";
-import GUI from "lil-gui";
 import gsap from "gsap";
 import { OrbitControls } from "three/examples/jsm/controls/OrbitControls";
 import * as BufferGeometryUtils from "three/examples/jsm/utils/BufferGeometryUtils.js";
@@ -25,7 +24,7 @@ export default class Scene {
         width: this.width,
         height: this.height,
         thickness: this.thickness,
-        waveShape: 5
+        waveShape: 5,
       },
       els: {
         group: new THREE.Group(),
@@ -140,11 +139,10 @@ export default class Scene {
     const layerLength = this.box.params.length;
     const layerWidth = this.box.params.width;
     const layerHeight = this.box.params.height;
-    const spacing = 0.5
+    const spacing = 0.5;
 
     for (let halfIdx = 0; halfIdx < 2; halfIdx++) {
       for (let sideIdx = 0; sideIdx < 2; sideIdx++) {
-
         const faceAPlaneGeometry = new THREE.PlaneGeometry(
           layerLength,
           layerWidth,
@@ -179,13 +177,18 @@ export default class Scene {
         this.box.els[faceB2].layerMid.geometry = faceBUpAndDownGeometry;
         this.box.els[faceB4].layerMid.geometry = faceBUpAndDownGeometry;
 
-        this.box.els[faceA2].layerMid.position.y = layerWidth + layerHeight + 0.5 * 2
+        this.box.els[faceA2].layerMid.position.y =
+          layerWidth + layerHeight + 0.5 * 2;
 
-        this.box.els[faceB1].layerMid.position.x = 0.5 * layerLength + layerHeight * 0.5 + spacing;
-        this.box.els[faceB3].layerMid.position.x = -0.5 * layerLength + layerHeight * -0.5 - spacing;
+        this.box.els[faceB1].layerMid.position.x =
+          0.5 * layerLength + layerHeight * 0.5 + spacing;
+        this.box.els[faceB3].layerMid.position.x =
+          -0.5 * layerLength + layerHeight * -0.5 - spacing;
 
-        this.box.els[faceB2].layerMid.position.y = 0.5 * layerWidth + layerHeight * 0.5 + spacing;
-        this.box.els[faceB4].layerMid.position.y = -0.5 * layerWidth + layerHeight * -0.5 - spacing;
+        this.box.els[faceB2].layerMid.position.y =
+          0.5 * layerWidth + layerHeight * 0.5 + spacing;
+        this.box.els[faceB4].layerMid.position.y =
+          -0.5 * layerWidth + layerHeight * -0.5 - spacing;
       }
     }
   }
@@ -350,7 +353,6 @@ export default class Scene {
 
   previewMockup() {
     // this.orbit.enabled = false
-
     const layerLength = this.box.params.length;
     const layerWidth = this.box.params.width;
     const layerHeight = this.box.params.height;
@@ -392,9 +394,9 @@ export default class Scene {
 
     this.box.els.faceB4.layerMid.position.y = -0.5 * layerWidth;
     this.box.els.faceB4.layerMid.position.z = layerHeight / 2;
-      const fake = 6.8;
-      const fake_spacing = 3; //3
-    this.box.els.faceA2.layerMid.position.z = layerHeight + fake
+    const fake = 6.8;
+    const fake_spacing = 3;
+    this.box.els.faceA2.layerMid.position.z = layerHeight + fake;
     this.box.els.faceA2.layerMid.position.y = fake_spacing;
     this.box.els.faceA2.layerMid.rotation.x = MathUtils.degToRad(-45);
   }
