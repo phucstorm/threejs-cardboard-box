@@ -1,4 +1,4 @@
-## GYBOX 3D
+## Threejs 3D CardboarBox 
 
 ReactJS + ThreeJS box template customize application
 
