@@ -139,12 +139,12 @@ export const BoxDielineWrapper = ({ length, width, height }) => {
         <scene ref={sceneRef} />
         <PerspectiveCamera
           ref={cameraRef}
-          position={[40, 90, 10]}
-          fov={25}
+          position={[0, 0, 0]}
+          fov={45}
           near={10}
           far={1000}
         />
-        <OrthographicCamera zoom={10} />
+        <OrthographicCamera zoom={1} />
         <ambientLight intensity={1} />
         <BoxDieline {...{ width, length, height }} lineColor={0xfe5959} />
       </Suspense>

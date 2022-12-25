@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { BoxDielineWrapper } from "./BoxDieline";
 import Scene from "./Scene";
+import './index.css'
 
 const Box3D = (props) => {
   const { length, width, height, thickness } = props;
@@ -11,11 +12,8 @@ const Box3D = (props) => {
   }, [props]);
 
   return (
-    <div
-      className="box-3d-container"
-      style={{ height: "100vh", width: "100%" }}
-    >
-      <canvas id="box3D"></canvas>
+    <div id="storm-canvas-container">
+      <canvas id="storm-canvas"></canvas>
     </div>
   );
 };
@@ -23,8 +21,8 @@ const Box3D = (props) => {
 export default function App() {
   const initialValues = {
     length: 30,
-    width: 20,
-    height: 6,
+    width: 25,
+    height: 10,
     thickness: 0.2
   };
   const [values, setValues] = useState(initialValues);
@@ -39,7 +37,7 @@ export default function App() {
   };
 
   return (
-    <div style={{ width: "100vw", height: "100vh", display: "flex" }}>
+    <div className="storm-app">
       {is3dMode ? <Box3D {...values} /> : <BoxDielineWrapper {...values} />}
       <div style={{ width: 300 }}>
         <div className="setting-dimension">
@@ -81,11 +79,11 @@ export default function App() {
             />
           </div>
         </div>
-        <div className="show-dieline">
+        {/* <div className="show-dieline">
           <button id="dieline" onClick={() => setIs3dMode(!is3dMode)}>
             show/hide dieline
           </button>
-        </div>
+        </div> */}
         <div className="aciton-animation">
           <button id="run-animation">preview animation</button>
         </div>

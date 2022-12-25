@@ -11,12 +11,9 @@ export default class Scene {
     this.width = width;
     this.height = height;
     this.thickness = thickness;
-    this.renderer;
-    this.orbit;
-    this.rayCaster;
-    this.mouse;
-    this.camera;
-    this.lightHolder;
+    this.container = document.querySelector("#storm-canvas-container");
+    this.boxElement = document.querySelector("#storm-canvas");
+    this.renderer, this.orbit, this.rayCaster, this.mouse, this.camera, this.lightHolder;
 
     this.box = {
       params: {
@@ -28,7 +25,14 @@ export default class Scene {
       },
       els: {
         group: new THREE.Group(),
+        faceA0: {
+          layer: new THREE.Group(),
+          layerTop: new THREE.Mesh(),
+          layerMid: new THREE.Mesh(),
+          layerBottom: new THREE.Mesh(),
+        },
         faceA1: {
+          layer: new THREE.Group(),
           layerTop: new THREE.Mesh(),
           layerMid: new THREE.Mesh(),
           layerBottom: new THREE.Mesh(),
@@ -68,32 +72,31 @@ export default class Scene {
     this.createZooming();
 
     const runAnimationButton = document.querySelector("#run-animation");
+    const downloadBtn = document.querySelector("#download");
+    const previewBtn = document.querySelector("#preview-mockup");
+
     runAnimationButton.addEventListener("click", this.runAnimation.bind(this));
-    this.exportToFormat();
+    downloadBtn.addEventListener("click", this.exportToFormat.bind(this));
+    previewBtn.addEventListener("click", this.previewMockup.bind(this));
 
     window.addEventListener("resize", this.updateSceneSize.bind(this));
-
-    const previewBtn = document.querySelector("#preview-mockup");
-    previewBtn.addEventListener("click", this.previewMockup.bind(this));
 
     this.render();
   }
 
   initScene() {
     // defined for create box element
-    const container = document.querySelector(".box-3d-container");
-    const boxElement = document.querySelector("#box3D");
     this.renderer = new THREE.WebGLRenderer({
       alpha: true,
       antialias: true,
-      canvas: boxElement,
+      canvas: this.boxElement,
     });
     this.renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
 
     this.scene = new THREE.Scene();
     this.camera = new THREE.PerspectiveCamera(
       45,
-      container.clientWidth / container.clientHeight,
+      this.container.clientWidth / this.container.clientHeight,
       10,
       1000
     );
@@ -102,8 +105,6 @@ export default class Scene {
     this.mouse = new THREE.Vector2(0, 0);
 
     this.updateSceneSize();
-
-    this.scene.add(this.box.els.group);
 
     const ambientLight = new THREE.AmbientLight(0xffffff, 0.5);
     this.scene.add(ambientLight);
@@ -120,13 +121,22 @@ export default class Scene {
     this.scene.add(this.box.els.group);
     this.setGeometryHierarchy();
 
-    const material = new THREE.MeshStandardMaterial({
-      color: new THREE.Color(0xba7b13),
-      side: THREE.DoubleSide,
-    });
-    this.box.els.group.traverse((c) => {
-      if (c.isMesh) c.material = material;
-    });
+    const sceneColor = "black"
+    this.renderer.setClearColor(sceneColor);
+    this.renderer.gammaOutput = true;
+
+    const gridAxisXHelper = new THREE.GridHelper(100, 100);
+    gridAxisXHelper.position.y = 0;
+    this.scene.add(gridAxisXHelper);
+
+    const gridAxisYHelper = new THREE.GridHelper(100, 100);
+    gridAxisYHelper.rotation.x = Math.PI / 2;
+    gridAxisYHelper.rotation.z = Math.PI / 2;
+    this.scene.add(gridAxisYHelper);
+
+    const axesHelper = new THREE.AxesHelper(50);
+    axesHelper.position.y = 0;
+    this.scene.add(axesHelper);
   }
 
   createObject() {
@@ -150,45 +160,66 @@ export default class Scene {
           Math.floor(0.2 * layerWidth)
         );
 
-        const faceBPlaneGeometry = new THREE.PlaneGeometry(
-          layerHeight,
-          layerWidth,
-          Math.floor(5 * layerHeight),
-          Math.floor(0.2 * layerWidth)
-        );
+        // const faceBPlaneGeometry = new THREE.PlaneGeometry(
+        //   layerHeight,
+        //   layerWidth,
+        //   Math.floor(5 * layerHeight),
+        //   Math.floor(0.2 * layerWidth)
+        // );
 
-        const faceBUpAndDownPlaneGeometry = new THREE.PlaneGeometry(
-          layerLength,
-          layerHeight,
-          Math.floor(5 * layerLength),
-          Math.floor(0.2 * layerHeight)
-        );
+        // const faceBUpAndDownPlaneGeometry = new THREE.PlaneGeometry(
+        //   layerLength,
+        //   layerHeight,
+        //   Math.floor(5 * layerLength),
+        //   Math.floor(0.2 * layerHeight)
+        // );
 
-        const faceAGeometry = this.createLayerGeometry(faceAPlaneGeometry);
-        const faceBGeometry = this.createLayerGeometry(faceBPlaneGeometry);
-        const faceBUpAndDownGeometry = this.createLayerGeometry(
-          faceBUpAndDownPlaneGeometry
-        );
+        const texture = new THREE.TextureLoader().load( 'https://images.pexels.com/photos/358482/pexels-photo-358482.jpeg?auto=compress&cs=tinysrgb');
+        const CustomMaterial = new THREE.MeshBasicMaterial({map: texture, side: THREE.DoubleSide});
+        const defaultMaterial = new THREE.MeshStandardMaterial({
+          color: new THREE.Color(0xba7b13),
+          side: THREE.DoubleSide,
+        });
+        this.box.els[faceA1].layerTop.geometry = this.createLayerTopGeometry(faceAPlaneGeometry);
+        this.box.els[faceA1].layerMid.geometry = this.createLayerMidGeometry(faceAPlaneGeometry);
+        this.box.els[faceA1].layerBottom.geometry = this.createLayerBottomGeometry(faceAPlaneGeometry);
+        this.box.els[faceA1].layerBottom.material = CustomMaterial;
+        this.box.els[faceA1].layerMid.material = defaultMaterial;
+        this.box.els[faceA1].layerTop.material = defaultMaterial;
 
-        this.box.els[faceA1].layerMid.geometry = faceAGeometry;
-        this.box.els[faceA2].layerMid.geometry = faceAGeometry;
-        this.box.els[faceB1].layerMid.geometry = faceBGeometry;
-        this.box.els[faceB3].layerMid.geometry = faceBGeometry;
-        this.box.els[faceB2].layerMid.geometry = faceBUpAndDownGeometry;
-        this.box.els[faceB4].layerMid.geometry = faceBUpAndDownGeometry;
 
-        this.box.els[faceA2].layerMid.position.y =
-          layerWidth + layerHeight + 0.5 * 2;
+        // this.box.els[faceA0].layerMid.geometry = faceAPlaneGeometry;
+        // this.box.els[faceA0].layerMid.material = texture;
+       
+        // const faceAGeometry = this.createLayerGeometry(faceAPlaneGeometry);
+        // const faceBGeometry = this.createLayerGeometry(faceBPlaneGeometry);
+        // const faceBUpAndDownGeometry = this.createLayerGeometry(
+        //   faceBUpAndDownPlaneGeometry
+        // );
 
-        this.box.els[faceB1].layerMid.position.x =
-          0.5 * layerLength + layerHeight * 0.5 + spacing;
-        this.box.els[faceB3].layerMid.position.x =
-          -0.5 * layerLength + layerHeight * -0.5 - spacing;
+        // this.box.els[faceA0].layerMid.geometry = faceAPlaneGeometry
+        // this.box.els[faceA1].layerTop.geometry = faceAGeometry;
+        // this.box.els[faceA1].layerMid.geometry = faceAGeometry;
+        // this.box.els[faceA1].layerBottom.geometry = faceAGeometry;
 
-        this.box.els[faceB2].layerMid.position.y =
-          0.5 * layerWidth + layerHeight * 0.5 + spacing;
-        this.box.els[faceB4].layerMid.position.y =
-          -0.5 * layerWidth + layerHeight * -0.5 - spacing;
+        // this.box.els[faceA2].layerMid.geometry = faceAGeometry;
+        // this.box.els[faceB1].layerMid.geometry = faceBGeometry;
+        // this.box.els[faceB3].layerMid.geometry = faceBGeometry;
+        // this.box.els[faceB2].layerMid.geometry = faceBUpAndDownGeometry;
+        // this.box.els[faceB4].layerMid.geometry = faceBUpAndDownGeometry;
+
+        // this.box.els[faceA2].layerMid.position.y =
+        //   layerWidth + layerHeight + 0.5 * 2;
+
+        // this.box.els[faceB1].layerMid.position.x =
+        //   0.5 * layerLength + layerHeight * 0.5 + spacing;
+        // this.box.els[faceB3].layerMid.position.x =
+        //   -0.5 * layerLength + layerHeight * -0.5 - spacing;
+
+        // this.box.els[faceB2].layerMid.position.y =
+        //   0.5 * layerWidth + layerHeight * 0.5 + spacing;
+        // this.box.els[faceB4].layerMid.position.y =
+        //   -0.5 * layerWidth + layerHeight * -0.5 - spacing;
       }
     }
   }
@@ -201,56 +232,27 @@ export default class Scene {
   }
 
   createZooming() {
-    const boxElement = document.querySelector("#box3D");
-    this.orbit = new OrbitControls(this.camera, boxElement);
+    this.orbit = new OrbitControls(this.camera, this.boxElement);
     this.orbit.enableZoom = true;
     this.orbit.enablePan = true;
   }
 
   updateSceneSize() {
     // defined for responsive
-    const container = document.querySelector(".box-3d-container");
-    this.camera.aspect = container.clientWidth / container.clientHeight;
+    this.camera.aspect = this.container.clientWidth / this.container.clientHeight;
     this.camera.updateProjectionMatrix();
-    this.renderer.setSize(container.clientWidth, container.clientHeight);
+    this.renderer.setSize(this.container.clientWidth, this.container.clientHeight);
   }
 
-  createLayerGeometry(baseGeometry) {
+  createLayerTopGeometry(baseGeometry) {
     const geometriesToMerge = [];
     geometriesToMerge.push(
-      getLayerGeometry(
+      this.getLayerGeometry(baseGeometry,
         (v) =>
-          -0.5 * this.box.params.thickness +
-          0.01 * Math.sin(this.box.params.waveShape * v)
+        0.5 * this.box.params.thickness +
+        0.01 * Math.sin(this.box.params.waveShape * v)
       )
-    );
-    geometriesToMerge.push(
-      getLayerGeometry(
-        (v) =>
-          0.5 * this.box.params.thickness +
-          0.01 * Math.sin(this.box.params.waveShape * v)
-      )
-    );
-    geometriesToMerge.push(
-      getLayerGeometry(
-        (v) =>
-          0.5 *
-          this.box.params.thickness *
-          Math.sin(this.box.params.waveShape * v)
-      )
-    );
-
-    function getLayerGeometry(offset) {
-      const layerGeometry = baseGeometry.clone();
-      const positionAttr = layerGeometry.attributes.position;
-      for (let i = 0; i < positionAttr.count; i++) {
-        const x = positionAttr.getX(i);
-        const y = positionAttr.getY(i);
-        let z = positionAttr.getZ(i) + offset(x);
-        positionAttr.setXYZ(i, x, y, z);
-      }
-      return layerGeometry;
-    }
+    ); 
     const mergedGeometry = new BufferGeometryUtils.mergeBufferGeometries(
       geometriesToMerge,
       false
@@ -259,49 +261,101 @@ export default class Scene {
     return mergedGeometry;
   }
 
+  createLayerBottomGeometry(baseGeometry) {
+    const geometriesToMerge = [];
+    geometriesToMerge.push(
+      this.getLayerGeometry(baseGeometry,
+        (v) =>
+          -0.5 * this.box.params.thickness +
+          0.01 * Math.sin(this.box.params.waveShape * v)
+      )
+    ); 
+    const mergedGeometry = new BufferGeometryUtils.mergeBufferGeometries(
+      geometriesToMerge,
+      false
+    );
+    mergedGeometry.computeVertexNormals();
+    return mergedGeometry;
+  }
+
+  createLayerMidGeometry(baseGeometry) {
+    const geometriesToMerge = [];
+    geometriesToMerge.push(
+      this.getLayerGeometry(baseGeometry,
+        (v) =>
+        0.5 *
+        this.box.params.thickness *
+        Math.sin(this.box.params.waveShape * v)
+      )
+    ); 
+    const mergedGeometry = new BufferGeometryUtils.mergeBufferGeometries(
+      geometriesToMerge,
+      false
+    );
+    mergedGeometry.computeVertexNormals();
+    return mergedGeometry;
+  }
+
+  getLayerGeometry(baseGeometry, offset) {
+    const layerGeometry = baseGeometry.clone();
+    const positionAttr = layerGeometry.attributes.position;
+    for (let i = 0; i < positionAttr.count; i++) {
+      const x = positionAttr.getX(i);
+      const y = positionAttr.getY(i);
+      let z = positionAttr.getZ(i) + offset(x);
+      positionAttr.setXYZ(i, x, y, z);
+    }
+    return layerGeometry;
+  }
+
   setGeometryHierarchy() {
     this.box.els.group.add(
-      this.box.els.faceA1.layerMid,
-      this.box.els.faceA2.layerMid,
-      this.box.els.faceB1.layerMid,
-      this.box.els.faceB2.layerMid,
-      this.box.els.faceB3.layerMid,
-      this.box.els.faceB4.layerMid
+      this.box.els.faceA1.layer,
+      // this.box.els.faceA2.layer,
+      // this.box.els.faceB1.layer,
+      // this.box.els.faceB2.layer,
+      // this.box.els.faceB3.layer,
+      // this.box.els.faceB4.layer
     );
-    this.box.els.faceA1.layerMid.add(
+    this.box.els.faceA1.layer.add(
       this.box.els.faceA1.layerTop,
-      this.box.els.faceA1.layerBottom
+      this.box.els.faceA1.layerMid,
+      this.box.els.faceA1.layerBottom,
     );
-    this.box.els.faceA2.layerMid.add(
-      this.box.els.faceA2.layerTop,
-      this.box.els.faceA2.layerBottom
-    );
-    this.box.els.faceB1.layerMid.add(
-      this.box.els.faceB1.layerTop,
-      this.box.els.faceB1.layerBottom
-    );
-    this.box.els.faceB2.layerMid.add(
-      this.box.els.faceB2.layerTop,
-      this.box.els.faceB2.layerBottom
-    );
-    this.box.els.faceB3.layerMid.add(
-      this.box.els.faceB3.layerTop,
-      this.box.els.faceB3.layerBottom
-    );
-    this.box.els.faceB4.layerMid.add(
-      this.box.els.faceB4.layerTop,
-      this.box.els.faceB4.layerBottom
-    );
+    // this.box.els.faceA1.layerMid.add(
+    //   this.box.els.faceA1.layerTop,
+    //   this.box.els.faceA1.layerBottom
+    // );
+    // this.box.els.faceA2.layerMid.add(
+    //   this.box.els.faceA2.layerTop,
+    //   this.box.els.faceA2.layerBottom
+    // );
+    // this.box.els.faceB1.layerMid.add(
+    //   this.box.els.faceB1.layerTop,
+    //   this.box.els.faceB1.layerBottom
+    // );
+    // this.box.els.faceB2.layerMid.add(
+    //   this.box.els.faceB2.layerTop,
+    //   this.box.els.faceB2.layerBottom
+    // );
+    // this.box.els.faceB3.layerMid.add(
+    //   this.box.els.faceB3.layerTop,
+    //   this.box.els.faceB3.layerBottom
+    // );
+    // this.box.els.faceB4.layerMid.add(
+    //   this.box.els.faceB4.layerTop,
+    //   this.box.els.faceB4.layerBottom
+    // );
 
-    this.box.els.faceA1.layerMid.name = "faceA1-layerMid";
-    this.box.els.faceA1.layerTop.name = "faceA1-layerTop";
-    this.box.els.faceA1.layerBottom.name = "faceA1-layerBottom";
+    // this.box.els.faceA1.layerMid.name = "faceA1-layerMid";
+    // this.box.els.faceA1.layerTop.name = "faceA1-layerTop";
+    // this.box.els.faceA1.layerBottom.name = "faceA1-layerBottom";
 
-    this.box.els.faceA2.layerMid.name = "faceA2";
-    this.box.els.faceB1.layerMid.name = "faceB1";
-    this.box.els.faceB2.layerMid.name = "faceB2";
-    this.box.els.faceB3.layerMid.name = "faceB3";
-    this.box.els.faceB4.layerMid.name = "faceB4";
+    // this.box.els.faceA2.layerMid.name = "faceA2";
+    // this.box.els.faceB1.layerMid.name = "faceB1";
+    // this.box.els.faceB2.layerMid.name = "faceB2";
+    // this.box.els.faceB3.layerMid.name = "faceB3";
+    // this.box.els.faceB4.layerMid.name = "faceB4";
   }
 
   runAnimation() {
@@ -318,37 +372,34 @@ export default class Scene {
   }
 
   exportToFormat() {
-    const downloadBtn = document.querySelector("#download");
     const selectBox = document.getElementById("export-canvas");
-    downloadBtn.addEventListener("click", () => {
-      if (selectBox.value === "svg") {
-        var rendererSVG = new SVGRenderer();
-        rendererSVG.setSize(window.innerWidth, window.innerHeight);
-        rendererSVG.render(this.scene, this.camera);
-        var XMLS = new XMLSerializer();
-        var svgfile = XMLS.serializeToString(rendererSVG.domElement);
-        var svgData = svgfile;
-        var preface = '<?xml version="1.0" standalone="no"?>\r\n';
-        var svgBlob = new Blob([preface, svgData], {
-          type: "image/svg+xml;charset=utf-8",
-        });
-        var svgUrl = URL.createObjectURL(svgBlob);
-        var link = document.createElement("a");
-        link.href = svgUrl;
-        link.download = "test.svg";
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
-      } else {
-        this.renderer.render(this.scene, this.camera);
-        var link = document.createElement("a");
-        link.href = this.renderer.domElement.toDataURL();
-        link.download = "test.png";
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
-      }
-    });
+    if (selectBox.value === "svg") {
+      var rendererSVG = new SVGRenderer();
+      rendererSVG.setSize(window.innerWidth, window.innerHeight);
+      rendererSVG.render(this.scene, this.camera);
+      var XMLS = new XMLSerializer();
+      var svgfile = XMLS.serializeToString(rendererSVG.domElement);
+      var svgData = svgfile;
+      var preface = '<?xml version="1.0" standalone="no"?>\r\n';
+      var svgBlob = new Blob([preface, svgData], {
+        type: "image/svg+xml;charset=utf-8",
+      });
+      var svgUrl = URL.createObjectURL(svgBlob);
+      var link = document.createElement("a");
+      link.href = svgUrl;
+      link.download = "test.svg";
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+    } else {
+      this.renderer.render(this.scene, this.camera);
+      var link = document.createElement("a");
+      link.href = this.renderer.domElement.toDataURL();
+      link.download = "test.png";
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+    }
   }
 
   previewMockup() {
@@ -363,9 +414,12 @@ export default class Scene {
 
     this.scene.remove(this.scene.getObjectByName("Light"));
     this.lightHolder = new THREE.Group();
-    const topLight = new THREE.PointLight(0xffffff, 0.5);
+    const topLight = new THREE.PointLight(0xffffff, 0.7);
+    const sideLight = new THREE.PointLight(0xffffff, 0.7);
     topLight.position.set(0, -50, 0);
+    sideLight.position.set(0, 50, 0);
     this.lightHolder.add(topLight);
+    this.lightHolder.add(sideLight);
     this.lightHolder.name = "Light";
     this.scene.add(this.lightHolder);
 
@@ -375,7 +429,13 @@ export default class Scene {
       sphereSize,
       "red"
     );
-    // this.scene.add(pointLightTopHelper);
+    const pointLightSideHelper = new THREE.PointLightHelper(
+      sideLight,
+      sphereSize,
+      "blue"
+    );
+    this.scene.add(pointLightTopHelper);
+    this.scene.add(pointLightSideHelper);
 
     this.box.els.faceB1.layerMid.rotation.y = MathUtils.degToRad(90);
     this.box.els.faceB3.layerMid.rotation.y = MathUtils.degToRad(90);
@@ -397,7 +457,7 @@ export default class Scene {
     const fake = 6.8;
     const fake_spacing = 3;
     this.box.els.faceA2.layerMid.position.z = layerHeight + fake;
-    this.box.els.faceA2.layerMid.position.y = fake_spacing;
+    this.box.els.faceA2.layerMid.position.y = Math.cos(45) * ( layerLength * 0.5 );
     this.box.els.faceA2.layerMid.rotation.x = MathUtils.degToRad(-45);
   }
 }
