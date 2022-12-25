@@ -10,19 +10,13 @@ export default class Scene {
     this.length = length;
     this.width = width;
     this.height = height;
-    this.thickness = thickness;
+    this.thickness = thickness || 1;
+    this.waveShape = 5;
     this.container = document.querySelector("#storm-canvas-container");
     this.boxElement = document.querySelector("#storm-canvas");
     this.renderer, this.orbit, this.rayCaster, this.mouse, this.camera, this.lightHolder;
 
     this.box = {
-      params: {
-        length: this.length,
-        width: this.width,
-        height: this.height,
-        thickness: this.thickness,
-        waveShape: 5,
-      },
       els: {
         group: new THREE.Group(),
         faceA0: {
@@ -70,7 +64,6 @@ export default class Scene {
     this.initScene();
     this.createObject();
     this.createZooming();
-
     const runAnimationButton = document.querySelector("#run-animation");
     const downloadBtn = document.querySelector("#download");
     const previewBtn = document.querySelector("#preview-mockup");
@@ -78,9 +71,7 @@ export default class Scene {
     runAnimationButton.addEventListener("click", this.runAnimation.bind(this));
     downloadBtn.addEventListener("click", this.exportToFormat.bind(this));
     previewBtn.addEventListener("click", this.previewMockup.bind(this));
-
     window.addEventListener("resize", this.updateSceneSize.bind(this));
-
     this.render();
   }
 
@@ -146,18 +137,18 @@ export default class Scene {
     const faceB2 = "faceB2";
     const faceB3 = "faceB3";
     const faceB4 = "faceB4";
-    const layerLength = this.box.params.length;
-    const layerWidth = this.box.params.width;
-    const layerHeight = this.box.params.height;
+    const layerLength = this.length;
+    const layerWidth = this.width;
+    const layerHeight = this.height;
     const spacing = 0.5;
 
     for (let halfIdx = 0; halfIdx < 2; halfIdx++) {
       for (let sideIdx = 0; sideIdx < 2; sideIdx++) {
         const faceAPlaneGeometry = new THREE.PlaneGeometry(
-          layerLength,
-          layerWidth,
-          Math.floor(5 * layerLength),
-          Math.floor(0.2 * layerWidth)
+          this.length,
+          this.width,
+          Math.floor(5 * this.length),
+          Math.floor(0.2 * this.width)
         );
 
         // const faceBPlaneGeometry = new THREE.PlaneGeometry(
@@ -174,30 +165,29 @@ export default class Scene {
         //   Math.floor(0.2 * layerHeight)
         // );
 
-        const texture = new THREE.TextureLoader().load( 'https://images.pexels.com/photos/358482/pexels-photo-358482.jpeg?auto=compress&cs=tinysrgb');
-        const CustomMaterial = new THREE.MeshBasicMaterial({map: texture, side: THREE.DoubleSide});
+        const texture = new THREE.TextureLoader().load('https://images.pexels.com/photos/358482/pexels-photo-358482.jpeg?auto=compress&cs=tinysrgb');
+        const customMaterial = new THREE.MeshBasicMaterial({map: texture, side: THREE.DoubleSide});
         const defaultMaterial = new THREE.MeshStandardMaterial({
           color: new THREE.Color(0xba7b13),
           side: THREE.DoubleSide,
         });
+
         this.box.els[faceA1].layerTop.geometry = this.createLayerTopGeometry(faceAPlaneGeometry);
         this.box.els[faceA1].layerMid.geometry = this.createLayerMidGeometry(faceAPlaneGeometry);
         this.box.els[faceA1].layerBottom.geometry = this.createLayerBottomGeometry(faceAPlaneGeometry);
-        this.box.els[faceA1].layerBottom.material = CustomMaterial;
+        this.box.els[faceA1].layerBottom.material = customMaterial;
         this.box.els[faceA1].layerMid.material = defaultMaterial;
         this.box.els[faceA1].layerTop.material = defaultMaterial;
 
+        // this.box.els[faceA1].layer.rotation.x = MathUtils.degToRad(-90)
 
-        // this.box.els[faceA0].layerMid.geometry = faceAPlaneGeometry;
-        // this.box.els[faceA0].layerMid.material = texture;
-       
+      
         // const faceAGeometry = this.createLayerGeometry(faceAPlaneGeometry);
         // const faceBGeometry = this.createLayerGeometry(faceBPlaneGeometry);
         // const faceBUpAndDownGeometry = this.createLayerGeometry(
         //   faceBUpAndDownPlaneGeometry
         // );
 
-        // this.box.els[faceA0].layerMid.geometry = faceAPlaneGeometry
         // this.box.els[faceA1].layerTop.geometry = faceAGeometry;
         // this.box.els[faceA1].layerMid.geometry = faceAGeometry;
         // this.box.els[faceA1].layerBottom.geometry = faceAGeometry;
@@ -249,8 +239,8 @@ export default class Scene {
     geometriesToMerge.push(
       this.getLayerGeometry(baseGeometry,
         (v) =>
-        0.5 * this.box.params.thickness +
-        0.01 * Math.sin(this.box.params.waveShape * v)
+        0.5 * this.thickness +
+        0.01 * Math.sin(this.waveShape * v)
       )
     ); 
     const mergedGeometry = new BufferGeometryUtils.mergeBufferGeometries(
@@ -266,8 +256,8 @@ export default class Scene {
     geometriesToMerge.push(
       this.getLayerGeometry(baseGeometry,
         (v) =>
-          -0.5 * this.box.params.thickness +
-          0.01 * Math.sin(this.box.params.waveShape * v)
+          -0.5 * this.thickness +
+          0.01 * Math.sin(this.waveShape * v)
       )
     ); 
     const mergedGeometry = new BufferGeometryUtils.mergeBufferGeometries(
@@ -284,8 +274,8 @@ export default class Scene {
       this.getLayerGeometry(baseGeometry,
         (v) =>
         0.5 *
-        this.box.params.thickness *
-        Math.sin(this.box.params.waveShape * v)
+        this.thickness *
+        Math.sin(this.waveShape * v)
       )
     ); 
     const mergedGeometry = new BufferGeometryUtils.mergeBufferGeometries(
@@ -404,9 +394,9 @@ export default class Scene {
 
   previewMockup() {
     // this.orbit.enabled = false
-    const layerLength = this.box.params.length;
-    const layerWidth = this.box.params.width;
-    const layerHeight = this.box.params.height;
+    const layerLength = this.length;
+    const layerWidth = this.width;
+    const layerHeight = this.height;
 
     this.scene.rotation.x = MathUtils.degToRad(-105);
     this.scene.rotation.y = MathUtils.degToRad(0);
